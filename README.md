@@ -2,7 +2,7 @@
 A minimal mail server setup for Ubuntu system. Use it on cloud or VPS droplets or machines. Good for developers, tech-savvy people, and nerds.
 
 
-**Minimal Mail Server Ubuntu** is a comprehensive setup script designed to configure a secure and functional mail server on an Ubuntu 20.04+ droplet. This script automates the installation and configuration of essential mail server components, including Postfix, Dovecot, SpamAssassin, Fail2ban, Certbot, and OpenDKIM, to provide a complete mail solution for multiple domains.
+**Minimal Mail Server Ubuntu** is a minimal setup (yet with easy guidance) script designed to configure a secure and functional mail server on an Ubuntu 20.04+ droplet. This script automates the installation and configuration of essential mail server components, including Postfix, Dovecot, SpamAssassin, Fail2ban, Certbot, and OpenDKIM, to provide a complete mail solution for multiple domains.
 
 ## Features
 
@@ -12,6 +12,13 @@ A minimal mail server setup for Ubuntu system. Use it on cloud or VPS droplets o
 - **Fail2ban**: Enhanced security with intrusion protection.
 - **Certbot**: Automated SSL certificate management for mail server domains.
 - **OpenDKIM**: DKIM signing for email authenticity and integrity.
+
+## Key Benefits
+- **Automated Setup:** Easily configure your mail server with a single script.
+- **Secure Communication:** Enforces SSL/TLS encryption for email transmission.
+- **Spam Protection:** Incorporates advanced spam filtering mechanisms.
+- **Dynamic Configuration:** Automatically handles multiple domains with individual configurations.
+- **DNS Configuration Guide:** Generates detailed DNS records for SPF, DKIM, and DMARC.
 
 ## Important Setup Instructions
 
@@ -26,11 +33,24 @@ Before running the script, ensure you have configured DNS settings for your doma
 To install and configure your mail server, run the following command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourusername/yourrepository/main/setup_mail_server.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/digitalsetups/minimal-mail-server-ubuntu/main/setup_mail_server.sh | sudo bash
+```
+Follow with the prompts after it. 
+ 
+## After Installation
 
-## Configuration
+- After running the script, you will receive a guide with DNS configuration details for SPF, DKIM, and DMARC records. Make sure to update your DNS records accordingly to ensure proper email delivery and authentication.
+- Send a test email
 
-After running the script, you will receive a guide with DNS configuration details for SPF, DKIM, and DMARC records. Make sure to update your DNS records accordingly to ensure proper email delivery and authentication.
+## Troubleshoot
+- **Check Mail Server Status:** Ensure that all mail server services are running by executing:
+  ```sudo systemctl status postfix```
+  ```sudo systemctl status dovecot```
+  ```sudo systemctl status spamassassin```
+- **Review Logs in case of issue:** Check the logs for any errors or issues:
+
+  ```sudo tail -f /var/log/mail.log```
+  ```sudo tail -f /var/log/mail.err```
 
 ## Developed By
 
