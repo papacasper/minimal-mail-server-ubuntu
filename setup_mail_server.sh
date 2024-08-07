@@ -203,4 +203,26 @@ Value: v=DMARC1; p=none; rua=mailto:dmarc-reports@$domain
 EOL
 done
 
-echo "Configuration complete. Please refer to /var/www/html/emails-dns.txt for DNS records." 
+echo "Configuration complete. Please refer to /var/www/html/emails-dns.txt for DNS records."
+
+# Configure Fail2ban for Postfix and Dovecot
+sudo bash -c "cat > /etc/fail2ban/jail.local" <<EOL
+[postfix]
+enabled  = true
+port     = smtp,ssmtp
+filter   = postfix
+logpath  = /var/log/mail.log
+maxretry = 5
+
+[dovecot]
+enabled  = true
+port     = pop3,pop3s,imap,imaps
+filter   = dovecot
+logpath  = /var/log/mail.log
+maxretry = 5
+EOL
+
+# Reload Fail2ban to apply changes
+sudo systemctl restart fail2ban
+
+echo "Fail2ban has been configured for Postfix and Dovecot."
