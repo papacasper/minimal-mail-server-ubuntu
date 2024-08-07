@@ -2,7 +2,10 @@
 A minimal mail server setup for Ubuntu system. Use it on cloud or VPS droplets or machines. Good for developers, tech-savvy people, and nerds.
 
 
-**Minimal Mail Server Ubuntu** is a minimal setup (yet with easy guidance) script designed to configure a secure and functional mail server on an Ubuntu 20.04+ droplet. This script automates the installation and configuration of essential mail server components, including Postfix, Dovecot, SpamAssassin, Fail2ban, Certbot, and OpenDKIM, to provide a complete mail solution for multiple domains.
+**Minimal Mail Server Ubuntu** is a minimal setup (yet with easy guidance) script designed to configure a secure and functional mail server on an Ubuntu 20.04+ droplet. This script automates the installation and configuration of essential mail server components, including Postfix, Dovecot, SpamAssassin, Fail2ban, Certbot, and OpenDKIM, to provide a complete mail solution for multiple domains. 
+
+**What does it not cover? and why?**
+- This script had to be minimal for our use case. We didn't need Calendar, Contacts, ActiveSync stuff, as well as webmail (a frontend view of emails). To avoid loading server (a cloud droplet on Ubuntu) with unnecessary stuff at that moment, we scripted it. 
 
 ## Features
 
@@ -40,6 +43,9 @@ Follow with the prompts after it.
 ## After Installation
 
 - After running the script, you will receive a guide with DNS configuration details for SPF, DKIM, and DMARC records. Make sure to update your DNS records accordingly to ensure proper email delivery and authentication.
+- **Locate the Users File to create emails and passwords**: The users file for Dovecot is typically located at ```/etc/dovecot/users```. You can open this file with a text editor as ```sudo nano /etc/dovecot/users```
+- **Generate a Hashed Password for the email account**: You can generate a hashed password using the doveadm command: ```doveadm pw -s sha256-crypt```
+- **Add New Email Users:** To add new email users, follow the format: ```user@example.com:{SHA256}hashed_password``` - One email & pass per line. You can add users for all available hosts on the server.
 - Send a test email
 
 ## Troubleshoot
@@ -54,7 +60,7 @@ Follow with the prompts after it.
 
 ## Developed By
 
-This project was developed by **[Aqsa J.](https://digitalsetups.org)** from **[Digital Setups](https://digitalsetups.org)**.
+This script was developed by **[Aqsa J.](https://digitalsetups.org)** from **[Digital Setups](https://digitalsetups.org)** for her client's project. 
 
 ## Contributing
 
