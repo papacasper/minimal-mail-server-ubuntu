@@ -8,7 +8,9 @@ sudo apt install -y postfix dovecot-core dovecot-imapd spamassassin fail2ban cer
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
 # Get list of available hostnames
-HOSTNAMES=$(ls /etc/apache2/sites-available | sed -e 's/\.conf$//')
+# HOSTNAMES=$(ls /etc/apache2/sites-available | sed -e 's/\.conf$//') 
+# Prompt user to manually enter domain names pointing to this server
+read -p "Please enter the domain names pointing to this server, separated by spaces: " -a HOSTNAMES
 
 # Prompt user to point mail subdomains
 echo "Please point mail.<hostname> for all domains on the server to this server IP: $SERVER_IP"
