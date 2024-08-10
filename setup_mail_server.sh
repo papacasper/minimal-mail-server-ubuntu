@@ -23,7 +23,7 @@ fi
 
 
 # Stop Apache or Nginx before running Certbot to avoid port conflicts
-# sudo systemctl stop apache2
+# sudo systemctl stop apache2 
 
 # Obtain certificates for mail subdomains
 for domain in $HOSTNAMES; do
@@ -36,7 +36,7 @@ for domain in $HOSTNAMES; do
 done
 
 # Restart Apache or Nginx after obtaining certificates
-# sudo systemctl start apache2
+sudo systemctl start apache2
 
 # Create a renewal hook for certbot
 echo "#!/bin/bash
