@@ -36,8 +36,15 @@ Before running the script, ensure you have configured DNS settings for your doma
 To install and configure your mail server, run the following command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/digitalsetups/minimal-mail-server-ubuntu/main/setup_mail_server.sh | sudo bash
+wget https://raw.githubusercontent.com/digitalsetups/minimal-mail-server-ubuntu/main/setup_mail_server.sh
 ```
+```
+chmod +x setup_mail_server.sh
+```
+```
+./setup_mail_server.sh
+```
+
 Follow with the prompts after it. 
  
 ## After Installation
