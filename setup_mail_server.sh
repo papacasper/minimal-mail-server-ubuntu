@@ -14,10 +14,10 @@ HOSTNAMES=$(ls /etc/apache2/sites-available | sed -e 's/\.conf$//')
 echo "Please point mail.<hostname> for all domains on the server to this server IP: $SERVER_IP"
 read -p "Ready to go? (yes/no): " ready
 
-if [[ "$ready" != "yes" ]]; then
-  echo "Exiting..."
-  exit 1
-fi
+#if [[ "$ready" != "yes" ]]; then
+#  echo "Exiting..."
+#  exit 1
+#fi
 
 # Obtain certificates for mail subdomains
 for domain in $HOSTNAMES; do
