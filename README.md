@@ -50,9 +50,9 @@ Follow with the prompts after it.
 ## After Installation
 
 - After running the script, you will receive a guide with DNS configuration details for SPF, DKIM, and DMARC records. Make sure to update your DNS records accordingly to ensure proper email delivery and authentication.
-- **Locate the Users File to create emails and passwords**: The users file for Dovecot is typically located at ```/etc/dovecot/users```. You can open this file with a text editor as ```sudo nano /etc/dovecot/users```
-- **Generate a Hashed Password for the email account**: You can generate a hashed password using the doveadm command: ```doveadm pw -s sha256-crypt```
-- **Add New Email Users:** To add new email users, follow the format: ```user@example.com:{SHA256}hashed_password``` - One email & pass per line. You can add users for all available hosts on the server.
+- **Locate the Users File to create emails and passwords**: The users file for Dovecot is typically located at ```/etc/dovecot/users```. You can open this file with a text editor as ```sudo nano /etc/dovecot/users```. Open it after having user names and passwords from next steps.
+- **Generate a Hashed Password for the email account**: You can generate a hashed password using the doveadm command: ```doveadm pw -s BLF-CRYPT```
+- **Add New Email Users:** To add new email users, follow the format: ```user@example.com:{generated_pass_by_password_generation_command)``` - One email & pass per line. You can add users for all available hosts on the server.
 - Send a test email
 
 ## Troubleshoot
