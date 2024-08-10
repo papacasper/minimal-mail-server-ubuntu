@@ -16,15 +16,26 @@ read -p "Please enter the domain names pointing to this server, separated by spa
 echo "Please point mail.<hostname> for all domains on the server to this server IP: $SERVER_IP"
 read -p "Ready to go? (yes/no): " ready
 
-#if [[ "$ready" != "yes" ]]; then
-#  echo "Exiting..."
-#  exit 1
-#fi
+if [[ "$ready" != "yes" ]]; then
+  echo "Exiting..."
+  exit 1
+fi
+
+
+# Stop Apache or Nginx before running Certbot to avoid port conflicts
+sudo systemctl stop apache2
 
 # Obtain certificates for mail subdomains
 for domain in $HOSTNAMES; do
   sudo certbot certonly --standalone -d mail.$domain
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to obtain certificate for mail.$domain. Please check the logs."
+    # Handle error: You can choose to exit or continue depending on your preference
+    exit 1
+  fi
 done
+# Restart Apache or Nginx after obtaining certificates
+sudo systemctl start apache2
 
 # Create a renewal hook for certbot
 echo "#!/bin/bash
