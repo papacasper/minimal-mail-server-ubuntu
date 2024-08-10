@@ -118,6 +118,8 @@ EOL
 
 # Create users file for Dovecot
 sudo touch /etc/dovecot/users
+sudo chmod 600 /etc/dovecot/users
+sudo chown root:dovecot /etc/dovecot/users
 
 # Restart Dovecot
 sudo systemctl restart dovecot
