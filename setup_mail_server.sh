@@ -110,13 +110,20 @@ sudo openssl dhparam -out /etc/dovecot/dh.pem 4096
 sudo bash -c "cat >> /etc/dovecot/conf.d/10-auth.conf" <<EOL
 disable_plaintext_auth = yes
 auth_mechanisms = plain login
+passdb {
+  driver = passwd-file
+  args = scheme=BLF-CRYPT /etc/dovecot/users
+}
+userdb {
+  driver = passwd
+}
 EOL
 
 sudo bash -c "cat >> /etc/dovecot/conf.d/10-mail.conf" <<EOL
 mail_location = maildir:~/Maildir
 EOL
 
-# Create users file for Dovecot
+# Create users file for Dovecot with restricted permissions
 sudo touch /etc/dovecot/users
 sudo chmod 600 /etc/dovecot/users
 sudo chown root:dovecot /etc/dovecot/users
