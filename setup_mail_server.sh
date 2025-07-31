@@ -2,7 +2,7 @@
 
 # Update and install required packages
 sudo apt update
-sudo apt install -y postfix dovecot-core dovecot-imapd spamassassin fail2ban certbot opendkim opendkim-tools
+sudo apt install -y postfix dovecot-core dovecot-imapd dovecot-auth spamassassin fail2ban certbot opendkim opendkim-tools
 
 # Get server IP address
 SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -67,8 +67,13 @@ smtpd_tls_session_cache_timeout = 3600s
 tls_random_source = dev:/dev/urandom
 
 myhostname = mail.${HOSTNAMES[0]}
-mydestination = localhost, \$(hostname)
-virtual_alias_domains = $(echo $HOSTNAMES | tr ' ' ,)
+mydestination = localhost
+virtual_mailbox_domains = $(echo $HOSTNAMES | tr ' ' ,)
+virtual_mailbox_maps = hash:/etc/postfix/vmailbox
+virtual_mailbox_base = /var/mail/vhosts
+virtual_minimum_uid = 1000
+virtual_uid_maps = static:5000
+virtual_gid_maps = static:5000
 virtual_alias_maps = hash:/etc/postfix/virtual
 EOL
 
@@ -80,8 +85,47 @@ smtpd_tls_key_file=/etc/letsencrypt/live/mail.$domain/privkey.pem
 EOL
 done
 
-# Generate the virtual map database
+# Create virtual mail user and directories
+sudo groupadd -g 5000 vmail 2>/dev/null || true
+sudo useradd -g vmail -u 5000 vmail -d /var/mail/vhosts -s /sbin/nologin 2>/dev/null || true
+sudo mkdir -p /var/mail/vhosts
+sudo chown -R vmail:vmail /var/mail/vhosts
+sudo chmod -R 755 /var/mail/vhosts
+
+# Create virtual mailbox and alias files
+sudo touch /etc/postfix/vmailbox
+sudo touch /etc/postfix/virtual
+
+# Create directory structure for each domain
+for domain in $HOSTNAMES; do
+  sudo mkdir -p /var/mail/vhosts/$domain
+  sudo chown -R vmail:vmail /var/mail/vhosts/$domain
+done
+
+# Generate the virtual map databases
+sudo postmap /etc/postfix/vmailbox
 sudo postmap /etc/postfix/virtual
+
+# Configure Postfix master.cf for SASL submission
+POSTFIX_MASTER_CF="/etc/postfix/master.cf"
+sudo cp $POSTFIX_MASTER_CF ${POSTFIX_MASTER_CF}.bak
+
+# Add submission port configuration for SASL authentication
+sudo bash -c "cat >> $POSTFIX_MASTER_CF" <<EOL
+submission inet n       -       y       -       -       smtpd
+  -o syslog_name=postfix/submission
+  -o smtpd_tls_security_level=encrypt
+  -o smtpd_sasl_auth_enable=yes
+  -o smtpd_tls_auth_only=yes
+  -o smtpd_reject_unlisted_recipient=no
+  -o smtpd_client_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_helo_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_sender_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_recipient_restrictions=permit_sasl_authenticated,reject_unauth_destination
+  -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
+  -o milter_macro_daemon_name=ORIGINATING
+EOL
+
 sudo systemctl restart postfix
 
 # Configure Dovecot
@@ -106,27 +150,97 @@ done
 # Generate Diffie-Hellman parameter file
 sudo openssl dhparam -out /etc/dovecot/dh.pem 4096
 
-# Disable plain auth and configure mail location
+# Configure Dovecot for virtual users
 sudo bash -c "cat >> /etc/dovecot/conf.d/10-auth.conf" <<EOL
 disable_plaintext_auth = yes
 auth_mechanisms = plain login
 passdb {
   driver = passwd-file
-  args = scheme=BLF-CRYPT /etc/dovecot/users
+  args = scheme=BLF-CRYPT username_format=%u /etc/dovecot/users
 }
 userdb {
-  driver = passwd
+  driver = static
+  args = uid=vmail gid=vmail home=/var/mail/vhosts/%d/%n
 }
 EOL
 
 sudo bash -c "cat >> /etc/dovecot/conf.d/10-mail.conf" <<EOL
-mail_location = maildir:~/Maildir
+mail_location = maildir:/var/mail/vhosts/%d/%n/Maildir
+mail_uid = vmail
+mail_gid = vmail
+first_valid_uid = 5000
+last_valid_uid = 5000
 EOL
 
-# Create users file for Dovecot with restricted permissions
+# Configure Dovecot master service for Postfix SASL authentication
+DOVECOT_MASTER_CONF="/etc/dovecot/conf.d/10-master.conf"
+sudo cp $DOVECOT_MASTER_CONF ${DOVECOT_MASTER_CONF}.bak 2>/dev/null || true
+
+sudo bash -c "cat >> $DOVECOT_MASTER_CONF" <<EOL
+service auth {
+  unix_listener /var/spool/postfix/private/auth {
+    mode = 0660
+    user = postfix
+    group = postfix
+  }
+}
+EOL
+
+# Create users file for Dovecot virtual users with restricted permissions
 sudo touch /etc/dovecot/users
 sudo chmod 600 /etc/dovecot/users
 sudo chown root:dovecot /etc/dovecot/users
+
+# Function to add virtual mail users
+add_mail_user() {
+    read -p "Enter email address (user@domain.com): " email
+    read -s -p "Enter password: " password
+    echo
+    
+    # Extract domain from email
+    domain=$(echo "$email" | cut -d'@' -f2)
+    username=$(echo "$email" | cut -d'@' -f1)
+    
+    # Check if domain is configured
+    if [[ ! " ${HOSTNAMES[@]} " =~ " ${domain} " ]]; then
+        echo "Warning: Domain $domain is not in the configured domains list."
+        read -p "Continue anyway? (yes/no): " continue_anyway
+        if [[ "$continue_anyway" != "yes" ]]; then
+            echo "User creation cancelled."
+            return
+        fi
+    fi
+    
+    # Generate password hash using BLF-CRYPT
+    password_hash=$(doveadm pw -s BLF-CRYPT -p "$password")
+    
+    # Add user to Dovecot users file
+    echo "$email:$password_hash::::" | sudo tee -a /etc/dovecot/users > /dev/null
+    
+    # Add user to Postfix virtual mailbox file
+    echo "$email $domain/$username/" | sudo tee -a /etc/postfix/vmailbox > /dev/null
+    
+    # Create user directory structure
+    sudo mkdir -p "/var/mail/vhosts/$domain/$username/Maildir/{cur,new,tmp}"
+    sudo chown -R vmail:vmail "/var/mail/vhosts/$domain/$username"
+    sudo chmod -R 700 "/var/mail/vhosts/$domain/$username"
+    
+    # Rebuild postfix maps
+    sudo postmap /etc/postfix/vmailbox
+    
+    echo "Virtual mail user $email added successfully"
+    echo "Mailbox location: /var/mail/vhosts/$domain/$username/Maildir"
+}
+
+# Prompt to add initial virtual mail user
+echo "Would you like to add a virtual mail user now? (recommended)"
+echo "Users will be in format: user@domain.com"
+read -p "Add user? (yes/no): " add_user
+if [[ "$add_user" == "yes" ]]; then
+    add_mail_user
+    echo "You can add more virtual users later by running the add_mail_user function"
+    echo "Or manually add to /etc/dovecot/users and /etc/postfix/vmailbox"
+fi
 
 # Restart Dovecot
 sudo systemctl restart dovecot
@@ -227,6 +341,31 @@ EOL
 done
 
 echo "Configuration complete. Please refer to /var/www/html/emails-dns.txt for DNS records."
+echo ""
+echo "VIRTUAL MAIL SERVER SETUP COMPLETE!"
+echo "Your mail server is now configured with true virtual users and SASL authentication."
+echo ""
+echo "Mail Client Settings:"
+echo "- SMTP Server: mail.${HOSTNAMES[0]}"
+echo "- SMTP Port: 587 (submission with STARTTLS)"
+echo "- IMAP Server: mail.${HOSTNAMES[0]}"
+echo "- IMAP Port: 993 (IMAPS)"
+echo "- Authentication: Required for both SMTP and IMAP"
+echo "- Username: Full email address (user@domain.com)"
+echo ""
+echo "Virtual User Management:"
+echo "- All mailboxes stored in: /var/mail/vhosts/"
+echo "- Virtual mail user: vmail (UID/GID 5000)"
+echo "- No system users required for email accounts"
+echo ""
+echo "To add more virtual users later:"
+echo "1. Generate password hash: doveadm pw -s BLF-CRYPT -p 'password'"
+echo "2. Add to /etc/dovecot/users: email@domain.com:hash::::"
+echo "3. Add to /etc/postfix/vmailbox: email@domain.com domain.com/username/"
+echo "4. Run: sudo postmap /etc/postfix/vmailbox"
+echo "5. Create maildir: sudo mkdir -p /var/mail/vhosts/domain.com/username/Maildir/{cur,new,tmp}"
+echo "6. Set ownership: sudo chown -R vmail:vmail /var/mail/vhosts/domain.com/username"
+echo ""
 
 # Configure Fail2ban for Postfix and Dovecot
 sudo bash -c "cat > /etc/fail2ban/jail.local" <<EOL
