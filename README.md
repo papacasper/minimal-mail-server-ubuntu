@@ -9,12 +9,15 @@ A minimal mail server setup for Ubuntu system. Use it on cloud or VPS droplets o
 
 ## Features
 
-- **Postfix**: Configured for SMTP with SSL/TLS support.
-- **Dovecot**: Set up for IMAP with secure authentication.
+- **Postfix**: Configured for SMTP with SSL/TLS support and submission port (587) with SASL authentication.
+- **Dovecot**: Set up for IMAP with secure authentication and virtual user support.
 - **SpamAssassin**: Integrated for effective spam filtering.
 - **Fail2ban**: Enhanced security with intrusion protection.
 - **Certbot**: Automated SSL certificate management for mail server domains.
 - **OpenDKIM**: DKIM signing for email authenticity and integrity.
+- **Virtual Users**: True virtual user system with dedicated vmail user (no system users required).
+- **SASL Authentication**: Secure SMTP authentication for email submission.
+- **User Management**: Comprehensive script for adding, removing, and managing mail users.
 
 ## Key Benefits
 - **Automated Setup:** Easily configure your mail server with a single script.
@@ -22,6 +25,17 @@ A minimal mail server setup for Ubuntu system. Use it on cloud or VPS droplets o
 - **Spam Protection:** Incorporates advanced spam filtering mechanisms.
 - **Dynamic Configuration:** Automatically handles multiple domains with individual configurations.
 - **DNS Configuration Guide:** Generates detailed DNS records for SPF, DKIM, and DMARC.
+- **Virtual User Management:** Secure, scalable user system independent of system accounts.
+- **SASL Authentication:** Proper authenticated SMTP submission on port 587.
+- **Easy User Management:** Intuitive script for managing email accounts with validation and safety features.
+
+## Recent Updates
+
+We have recently made significant updates to enhance the functionality of the mail server:
+
+1. **Virtual User Support**: Transitioned to a true virtual user system which separates mail users from system users, offering improved security and management.
+2. **SASL Authentication**: Implemented and fine-tuned SASL authentication for secure email transmission and reception.
+3. **User Management Script**: Added a comprehensive script for managing mail users providing capabilities to add, remove, and change user passwords efficiently.
 
 ## Important Setup Instructions
 
